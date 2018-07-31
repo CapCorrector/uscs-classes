@@ -1,0 +1,56 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    #by default, the folder where your Vagrantfile is
+    #located is mapped into the VM as /vagrant, this means
+    #you do NOT need to synch that folder. The follopwing statement
+    #shares the parent folder of the directory that holds your
+    #Vargantfile with the VM.For the example in class this is your
+    #c:\users\your-home-folder\devops (Windows) or
+    #/Users/your-home-dir/devops (Mac).
+    # Doing this may be useful latter on in the class
+    # as it will allow you to access any folders you
+    #add
+    config.vm.synced_folder "..","/vagrant"
+    config.vm.box = "ubuntu/xenial64"
+    config.vm.network "forwarded_port", guest: 8000, host: 8000,
+    id:"http", auto_correct: true
+    config.vm.network 'private_network', ip: '10.0.0.2'
+
+    config.vm.provision "coreinstall", type: "shell", inline: <<-SHELL
+        apt-get -y update && \
+        apt-get -y upgrade && \
+        apt-get -y install \
+        build-essential git pkg-config zip unzip software-properties-common net-tools
+        locale-gen ru_RU.UTF-8
+    SHELL
+
+
+
+    config.vm.provision "docker_install", type: "shell", inline: <<-SHELL
+        sudo apt-get -y update
+        apt-transport-https \
+        ca-certificates \
+        curl \
+	software-properties-common
+	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+	sudo apt-key fingerprint 0EBFCD88
+	sudo add-apt-repository \
+	"deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+	$(lsb_release -cs) \
+	stable"
+	sudo apt-get -y update
+	sudo apt-get -y install docker-ce=17.09.0~ce-0~ubuntu
+	sudo groupadd docker
+	sudo usermod -aG docker vagrant
+    SHELL
+
+
+
+    config.vm.provision "reboot", type: "shell", inline: <<-SHELL
+        sync
+        sudo reboot
+    SHELL
+
+end

@@ -1,0 +1,4 @@
+192.168.1.1 - - [09/Aug/2017:01:09:27 -0700] "GET / HTTP/1.1" 302 -
+192.168.1.1 - - [09/Aug/2017:01:09:27 -0700] "GET /dashboard/ HTTP/1.1" 200 7573
+192.168.1.1 - - [09/Aug/2017:01:09:27 -0700] "GET /dashboard/stylesheets/normalize.css HTTP/1.1" 200 6876
+192.168.1.1 - - [09/Aug/2017:01:09:27 -0700] "GET /dashboard/javascripts/modernizr.js HTTP/1.1" 200 51365

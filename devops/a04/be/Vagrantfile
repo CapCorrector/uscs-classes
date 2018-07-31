@@ -1,0 +1,72 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    #by default, the folder where your Vagrantfile is
+    #located is mapped into the VM as /vagrant, this means
+    #you do NOT need to synch that folder. The follopwing statement
+    #shares the parent folder of the directory that holds your
+    #Vargantfile with the VM.For the example in class this is your
+    #c:\users\your-home-folder\devops (Windows) or
+    #/Users/your-home-dir/devops (Mac).
+    # Doing this may be useful latter on in the class
+    # as it will allow you to access any folders you
+    #add
+    config.vm.synced_folder "..","/vagrant"
+    config.vm.box = "ubuntu/xenial64"
+    config.vm.network 'private_network', ip: '10.0.0.3'
+
+    config.vm.provision "coreinstall", type: "shell", inline: <<-SHELL
+        apt-get -y update && \
+        apt-get -y upgrade && \
+        apt-get -y install \
+        build-essential git pkg-config zip unzip software-properties-common net-tools \
+        python3-pip python3-dev \
+        libgmp-dev gcc-multilib valgrind openmpi-bin openmpi-doc libopenmpi-dev \
+        portmap rpcbind libcurl4-openssl-dev bzip2 imagemagick libmagickcore-dev \
+        libssl-dev libffi6 libffi-dev llvm
+        locale-gen ru_RU.UTF-8
+	pip3 install --upgrade pip
+    SHELL
+
+
+
+    config.vm.provision "rabbitmq", type: "shell", inline: <<-SHELL
+        wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
+        wget https://packages.erlang-solutions.com/erlang/esl-erlang/FLAVOUR_1_general/esl-erlang_20.3.6-1~debian~jessie_amd64.deb
+        apt-get -y install ./esl-erlang_20.3.6-1~debian~jessie_amd64.deb
+        wget https://github.com/rabbitmq/rabbitmq-server/releases/download/v3.7.5/rabbitmq-server_3.7.5-1_all.deb
+	apt-get -y install ./rabbitmq-server_3.7.5-1_all.deb
+	echo "listeners.tcp.default = 0.0.0.0:5672" > /etc/rabbitmq/rabbitmq.conf
+        systemctl enable rabbitmq-server
+        systemctl start rabbitmq-server
+        rabbitmqctl add_user test test
+        rabbitmqctl set_user_tags test administrator
+        rabbitmqctl set_permissions -p / test ".*" ".*" ".*"
+    SHELL
+
+
+
+    config.vm.provision "nameko", type: "shell", inline: <<-SHELL
+        pip3 install nameko
+    SHELL
+
+
+
+    config.vm.provision "backend", type: "shell", inline: <<-SHELL
+        mkdir /usr/opt
+        cp /vagrant/FileService.py /usr/opt/
+        cp /vagrant/*.txt /usr/opt/
+        echo "#!/bin/sh -e" > /etc/rc.local
+        echo "cd /usr/opt && sleep 30 && /usr/local/bin/nameko run FileService &" >> /etc/rc.local
+        echo "exit 0" >> /etc/rc.local
+    SHELL
+
+
+
+    config.vm.provision "reboot", type: "shell", inline: <<-SHELL
+        sync
+        sudo reboot
+    SHELL
+
+end

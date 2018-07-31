@@ -1,0 +1,83 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+    #by default, the folder where your Vagrantfile is
+    #located is mapped into the VM as /vagrant, this means
+    #you do NOT need to synch that folder. The follopwing statement
+    #shares the parent folder of the directory that holds your
+    #Vargantfile with the VM.For the example in class this is your
+    #c:\users\your-home-folder\devops (Windows) or
+    #/Users/your-home-dir/devops (Mac).
+    # Doing this may be useful latter on in the class
+    # as it will allow you to access any folders you
+    #add
+    config.vm.synced_folder "..","/vagrant"
+    config.vm.box = "sbeliakou/centos-7.4-x86_64-minimal"
+    config.vm.network "forwarded_port", guest: 3389, host: 3389,
+    id:"rdp", auto_correct: true
+    config.vm.network "forwarded_port", guest: 5901, host: 5901,
+    id:"vnc", auto_correct: true
+    config.vm.network "forwarded_port", guest: 80, host: 8080,
+    id:"http", auto_correct: true
+    config.vm.network 'private_network', ip: '10.1.1.30'
+
+    config.vm.provision "coreinstall", type: "shell", inline: <<-SHELL
+        yum -y update && \
+        yum -y upgrade && \
+        yum -y install \
+        build-essential git pkg-config zip unzip software-properties-common net-tools \
+        python-pip python-dev \
+        libgmp-dev gcc-multilib valgrind openmpi-bin openmpi-doc libopenmpi-dev \
+        portmap rpcbind libcurl4-openssl-dev bzip2 imagemagick libmagickcore-dev \
+        libssl-dev libffi6 libffi-dev llvm
+        pip install --upgrade pip
+        pip install requests future cryptography pyopenssl ndg-httpsclient pyasn1 nelson
+    SHELL
+
+
+
+    config.vm.provision "newpython", type: "shell", inline: <<-SHELL
+        cd /usr/src
+        wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tgz
+        tar xzf Python-2.7.15.tgz
+	cd Python-2.7.15
+        ./configure --enable-optimizations
+        make altinstall
+    SHELL
+
+
+
+    config.vm.provision "apache", type: "shell", inline: <<-SHELL
+        yum -y install httpd
+        systemctl enable httpd
+        systemctl start httpd
+    SHELL
+
+
+
+    config.vm.provision "mate", type: "shell", inline: <<-SHELL
+        yum install epel-release -y
+        yum groupinstall "Server with GUI" -y
+        yum groupinstall "MATE Desktop" -y
+        echo "mate-session" > /home/vagrant/.Xclients
+	chmod +x /home/vagrant/.Xclients
+        chown vagrant:vagrant /home/vagrant/.Xclients
+    SHELL
+
+
+
+    config.vm.provision "installxrdp", type: "shell", inline: <<-SHELL
+        yum -y update
+        yum -y install xrdp
+        systemctl enable xrdp
+    SHELL
+
+
+
+    config.vm.provision "reboot", type: "shell", inline: <<-SHELL
+        sync
+        sudo reboot
+    SHELL
+
+end
